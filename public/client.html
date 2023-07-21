@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>猜词游戏</title>
+  <style>
+    canvas {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="drawingCanvas" width="800" height="600"></canvas>
+  <input type="text" id="guessInput" placeholder="输入您的猜测">
+  <button id="submitGuess">提交</button>
+
+  <script>
+    const canvas = document.getElementById('drawingCanvas');
+    const ctx = canvas.getContext('2d');
+    const guessInput = document.getElementById('guessInput');
+    const submitGuess = document.getElementById('submitGuess');
+
+    const ws = new WebSocket('ws://localhost:3000');
+
+    ws.addEventListener('open', () => {
+      console.log('Connected to server');
+    });
+
+    ws.addEventListener('message', (event) => {
+      const message = event.data;
+      const [type, data] = message.split(':', 2);
+
+      if (type === 'drawing') {
+        const [x, y] = data.split(',').map(Number);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      } else {
+        console.log(`Server: ${message}`);
+      }
+    });
+
+    canvas.addEventListener('mousemove', (event) => {
+      if (event.buttons === 1) {
+        const x = event.clientX - canvas.offsetLeft;
+        const y = event.clientY - canvas.offsetTop;
+        ws.send(`drawing:${x},${y}`);
+      }
+    });
+
+    submitGuess.addEventListener('click', () => {
+      ws.send(guessInput.value);
+      guessInput.value = '';
+    });
+  </script>
+</body>
+</html>
